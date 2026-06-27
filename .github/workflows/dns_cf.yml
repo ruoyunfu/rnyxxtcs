@@ -5,7 +5,7 @@ env:
 
 on:
   schedule:
-    - cron: '0 */1 * * *'
+    - cron: '0 */1 * * *'→ Runs every hour
   workflow_dispatch:
 
 jobs:
@@ -14,70 +14,16 @@ jobs:
     steps:
       - name: 'Checkout'
         uses: actions/checkout@v4
-        with:
-          # 关键：确保使用正确的 token 和仓库
-          token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ github.repository }}
-          fetch-depth: 0
-
       - name: 'Set up Python'
         uses: actions/setup-python@v5
         with:
           python-version: 3.12
-
       - name: 'Install dependencies'
         run: if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-
-      - name: 'run dnscf (更新 DNS)'
+      - name: 'run dnscf'
         env:
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
           CF_DNS_NAME: ${{ secrets.CF_DNS_NAME }}
           PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
         run: python dnscf.py
-
-      - name: '生成并部署 HTML 页面'
-        run: |
-          # 1. 获取当前时间和 DNS 解析的 IP
-          CURRENT_TIME=$(date '+%Y-%m-%d %H:%M:%S')
-          CURRENT_IP=$(dig +short ${{ secrets.CF_DNS_NAME }} | head -1)
-          
-          # 2. 生成 index.html
-          cat > index.html <<EOF
-          <!DOCTYPE html>
-          <html lang="zh">
-          <head>
-              <meta charset="UTF-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>Cloudflare 优选IP</title>
-              <style>
-                  body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; background: #f5f5f5; }
-                  .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-                  h1 { color: #333; }
-                  .info { margin: 20px 0; padding: 15px; background: #e8f4fd; border-radius: 5px; }
-                  .ip { font-size: 24px; font-weight: bold; color: #0077cc; }
-                  .time { color: #666; }
-              </style>
-          </head>
-          <body>
-              <div class="card">
-                  <h1>☁️ Cloudflare 优选IP</h1>
-                  <div class="info">
-                      <p><strong>当前优选 IP：</strong><span class="ip">${CURRENT_IP:-未获取到}</span></p>
-                      <p><strong>更新时间：</strong><span class="time">${CURRENT_TIME}</span></p>
-                      <p><small>此页面由 GitHub Actions 自动生成 | 每 1 小时更新一次</small></p>
-                  </div>
-              </div>
-          </body>
-          </html>
-          EOF
-
-          # 3. 确保 CNAME 文件指向你的域名（修复自定义域名）
-          echo "rnyxxtcs.ydkdjd.cyou" > CNAME
-
-          # 4. 配置 Git 并推送
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add index.html CNAME
-          git commit -m "更新优选IP页面 [skip ci]" || echo "没有变更需要提交"
-          git push origin main
