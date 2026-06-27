@@ -5,7 +5,7 @@ env:
 
 on:
   schedule:
-    - cron: '0 */1 * * *'   # 每小时运行一次
+    - cron: '0 */1 * * *'
   workflow_dispatch:
 
 jobs:
@@ -14,6 +14,11 @@ jobs:
     steps:
       - name: 'Checkout'
         uses: actions/checkout@v4
+        with:
+          # 关键：确保使用正确的 token 和仓库
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          fetch-depth: 0
 
       - name: 'Set up Python'
         uses: actions/setup-python@v5
@@ -67,12 +72,12 @@ jobs:
           </html>
           EOF
 
-          # 3. 配置 Git 并使用 GITHUB_TOKEN 认证（解决权限问题）
+          # 3. 确保 CNAME 文件指向你的域名（修复自定义域名）
+          echo "rnyxxtcs.ydkdjd.cyou" > CNAME
+
+          # 4. 配置 Git 并推送
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          
-          # 4. 提交并推送到 main 分支
-          git add index.html
+          git add index.html CNAME
           git commit -m "更新优选IP页面 [skip ci]" || echo "没有变更需要提交"
           git push origin main
