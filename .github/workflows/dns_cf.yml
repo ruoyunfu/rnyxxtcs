@@ -37,7 +37,7 @@ jobs:
           CURRENT_TIME=$(date '+%Y-%m-%d %H:%M:%S')
           CURRENT_IP=$(dig +short ${{ secrets.CF_DNS_NAME }} | head -1)
           
-          # 2. 生成 index.html（使用更美观的样式）
+          # 2. 生成 index.html
           cat > index.html <<EOF
           <!DOCTYPE html>
           <html lang="zh">
@@ -67,9 +67,12 @@ jobs:
           </html>
           EOF
 
-          # 3. 提交并推送到 main 分支
+          # 3. 配置 Git 并使用 GITHUB_TOKEN 认证（解决权限问题）
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          
+          # 4. 提交并推送到 main 分支
           git add index.html
           git commit -m "更新优选IP页面 [skip ci]" || echo "没有变更需要提交"
           git push origin main
